@@ -1,17 +1,41 @@
-# Generador de QR
+# QrGenerator
 
-Web en Python (Flask) para generar códigos QR **gratis y sin fecha de caducidad**.
+Aplicación web en Python para generar códigos QR **gratis y sin fecha de caducidad**.
 
-Los QR son *estáticos*: el contenido (URL, texto, WiFi, etc.) va codificado dentro de la imagen y no depende de ningún servidor, así que funcionan para siempre, incluso si apagas esta aplicación.
+Los códigos generados son *estáticos*: el contenido (URL, texto, WiFi, etc.) va codificado directamente en la imagen y no depende de ningún servidor ni servicio de redirección, por lo que funcionan para siempre.
 
-## Funciones
+## Funcionalidades
 
-- URL / texto, WiFi, Email, Teléfono y SMS
-- Vista previa en vivo
-- Colores, tamaño, margen y nivel de corrección de errores
-- Descarga en PNG o SVG (vectorial, ideal para imprimir)
+- Tipos de QR: URL / texto, WiFi, Email, Teléfono y SMS
+- Vista previa en vivo mientras se escribe
+- Personalización de color, fondo, tamaño del módulo y margen
+- Nivel de corrección de errores configurable (L, M, Q, H)
+- Descarga en PNG o SVG (vectorial, ideal para impresión)
+- Interfaz responsive con modo claro y oscuro
 
-## Uso
+## Tecnologías y librerías
+
+| Librería | Uso |
+| --- | --- |
+| [Flask](https://flask.palletsprojects.com/) | Servidor web y rutas |
+| [qrcode](https://github.com/lincolnloop/python-qrcode) | Generación de la matriz del código QR |
+| [Pillow](https://python-pillow.org/) | Renderizado de la imagen PNG |
+| HTML, CSS y JavaScript | Interfaz y vista previa en vivo |
+
+Requiere Python 3.10 o superior.
+
+## Estructura
+
+```
+├── app.py              # Servidor Flask y generación de QR (PNG/SVG)
+├── requirements.txt    # Dependencias
+├── templates/
+│   └── index.html      # Interfaz web
+└── static/
+    └── style.css       # Estilos
+```
+
+## Instalación
 
 ```bash
 python3 -m venv .venv
@@ -19,7 +43,3 @@ source .venv/bin/activate
 pip install -r requirements.txt
 python app.py
 ```
-
-Abre http://127.0.0.1:8765
-
-> En macOS el puerto 5000 lo usa el Receptor AirPlay (da error 403). Para usar otro puerto: `PORT=9090 python app.py`.
