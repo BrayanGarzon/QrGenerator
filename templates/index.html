@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Generador de QR gratis</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header>
+    <h1>Generador de QR</h1>
+    <p>Gratis, sin registro y <strong>sin fecha de caducidad</strong>. El contenido va dentro del código, así que funcionará para siempre.</p>
+  </header>
+
+  <main>
+    <form id="qr-form" class="card">
+      <div class="tabs" role="tablist">
+        <button type="button" class="tab active" data-type="text">URL / Texto</button>
+        <button type="button" class="tab" data-type="wifi">WiFi</button>
+        <button type="button" class="tab" data-type="email">Email</button>
+        <button type="button" class="tab" data-type="phone">Teléfono</button>
+        <button type="button" class="tab" data-type="sms">SMS</button>
+      </div>
+      <input type="hidden" name="type" value="text">
+
+      <fieldset data-panel="text">
+        <label>URL o texto
+          <textarea name="text" rows="3" placeholder="https://tu-sitio.com">https://</textarea>
+        </label>
+      </fieldset>
+
+      <fieldset data-panel="wifi" hidden>
+        <label>Nombre de la red (SSID)<input name="ssid"></label>
+        <label>Contraseña<input name="password" type="text"></label>
+        <label>Seguridad
+          <select name="security">
+            <option value="WPA">WPA/WPA2/WPA3</option>
+            <option value="WEP">WEP</option>
+            <option value="nopass">Sin contraseña</option>
+          </select>
+        </label>
+        <label class="check"><input type="checkbox" name="hidden" value="1"> Red oculta</label>
+      </fieldset>
+
+      <fieldset data-panel="email" hidden>
+        <label>Correo<input name="email" type="email" placeholder="nombre@correo.com"></label>
+        <label>Asunto<input name="subject"></label>
+        <label>Mensaje<textarea name="body" rows="2"></textarea></label>
+      </fieldset>
+
+      <fieldset data-panel="phone sms" hidden>
+        <label>Teléfono<input name="phone" type="tel" placeholder="+57 300 000 0000"></label>
+        <label data-only="sms">Mensaje<textarea name="message" rows="2"></textarea></label>
+      </fieldset>
+
+      <details>
+        <summary>Personalizar</summary>
+        <div class="grid">
+          <label>Color<input type="color" name="fill" value="#000000"></label>
+          <label>Fondo<input type="color" name="back" value="#ffffff"></label>
+          <label>Tamaño del módulo
+            <input type="range" name="box_size" min="4" max="40" value="10">
+          </label>
+          <label>Margen
+            <input type="range" name="border" min="0" max="10" value="4">
+          </label>
+          <label>Corrección de errores
+            <select name="ecc">
+              <option value="L">Baja (7%)</option>
+              <option value="M" selected>Media (15%)</option>
+              <option value="Q">Alta (25%)</option>
+              <option value="H">Máxima (30%)</option>
+            </select>
+          </label>
+        </div>
+      </details>
+    </form>
+
+    <section class="card preview">
+      <div class="frame">
+        <img id="qr-img" alt="Vista previa del código QR">
+        <p id="qr-error" class="error" hidden></p>
+      </div>
+      <div class="actions">
+        <button type="button" data-download="png">Descargar PNG</button>
+        <button type="button" data-download="svg" class="secondary">Descargar SVG</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const form = document.getElementById("qr-form");
+    const img = document.getElementById("qr-img");
+    const errorBox = document.getElementById("qr-error");
+    const typeInput = form.elements.type;
+    let timer, lastUrl;
+
+    function showPanel(type) {
+      typeInput.value = type;
+      document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.type === type));
+      document.querySelectorAll("[data-panel]").forEach(p => {
+        p.hidden = !p.dataset.panel.split(" ").includes(type);
+      });
+      document.querySelectorAll("[data-only]").forEach(el => el.hidden = el.dataset.only !== type);
+      refresh();
+    }
+
+    async function requestQr(format, download) {
+      const data = new FormData(form);
+      data.set("format", format);
+      if (download) data.set("download", "1");
+      const res = await fetch("/qr", { method: "POST", body: data });
+      if (!res.ok) throw new Error((await res.json()).error || "Error al generar el QR");
+      return res.blob();
+    }
+
+    async function refresh() {
+      try {
+        const blob = await requestQr("png");
+        if (lastUrl) URL.revokeObjectURL(lastUrl);
+        lastUrl = URL.createObjectURL(blob);
+        img.src = lastUrl;
+        img.hidden = false;
+        errorBox.hidden = true;
+      } catch (err) {
+        img.hidden = true;
+        errorBox.textContent = err.message;
+        errorBox.hidden = false;
+      }
+    }
+
+    async function download(format) {
+      try {
+        const blob = await requestQr(format, true);
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `qr.${format}`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => showPanel(t.dataset.type)));
+    document.querySelectorAll("[data-download]").forEach(b => b.addEventListener("click", () => download(b.dataset.download)));
+    form.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(refresh, 250); });
+    form.addEventListener("submit", e => e.preventDefault());
+    showPanel("text");
+  </script>
+</body>
+</html>
